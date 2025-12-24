@@ -7,8 +7,13 @@ import {
   updateTeamSubscription
 } from '@/lib/db/queries';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-04-30.basil'
+// TODO: Fix Stripe API version when ready to enable payments
+// export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+//   apiVersion: '2025-04-30.basil'
+// });
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
+  apiVersion: '2025-08-27.basil'
 });
 
 export async function createCheckoutSession({

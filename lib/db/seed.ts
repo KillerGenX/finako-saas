@@ -70,7 +70,8 @@ async function seed() {
     role: 'owner',
   });
 
-  await createStripeProducts();
+  // TODO: Skip Stripe products for now, will setup when Stripe keys are ready
+  // await createStripeProducts();
 }
 
 seed()
