@@ -282,7 +282,7 @@ User Path: Add Payment Before Trial Ends
              │
              ↓ (User scans & pays via e-wallet)
              │
-         [XENDIT WEBHOOK]
+         [MIDTRANS WEBHOOK]
 ```
 
 ---
@@ -290,18 +290,18 @@ User Path: Add Payment Before Trial Ends
 ### **STAGE 5: Payment Success (Webhook)**
 
 ```
-Xendit sends webhook: charge.succeeded
+Midtrans sends webhook: transaction.success
 
 ┌─────────────────────────────────────────────────┐
-│ Our API: POST /api/payments/xendit/webhook      │
+│ Our API: POST /api/payments/midtrans/webhook    │
 │                                                 │
 │ Webhook Payload:                                │
 │ {                                               │
-│   "id": "xendit_charge_id",                     │
-│   "external_id": "pay_abc123",                  │
-│   "status": "COMPLETED",                        │
-│   "amount": 99000,                              │
-│   "...": "..."                                  │
+│   "order_id": "midtrans_order_id",              │
+│   "transaction_id": "pay_abc123",              │
+│   "transaction_status": "settlement",           │
+│   "gross_amount": "39000",                      │
+│   "..." "..."                                  │
 │ }                                               │
 └────────────┬────────────────────────────────────┘
              │
@@ -414,8 +414,8 @@ System Job (Cron) - runs at midnight:
 3. For each subscription:
    ├─ Get payment_method
    ├─ Create new invoice for next month
-   ├─ Process charge via Xendit:
-   │  xendit.createCharge({
+   ├─ Process charge via Midtrans:
+   │  midtrans.createTransaction({
    │    external_id: invoice_id,
    │    amount: plan_price,
    │    ...
@@ -476,8 +476,8 @@ SCENARIO C: Payment Declined After 3 Retries
 │  └─ ...                                             │
 │                                                      │
 │  API Routes (/api/payments/)                        │
-│  ├─ POST /xendit/charge (Create charge)            │
-│  ├─ POST /xendit/webhook (Handle callback)         │
+│  ├─ POST /midtrans/charge (Create transaction)     │
+│  ├─ POST /midtrans/webhook (Handle callback)       │
 │  ├─ POST /invoices (Generate invoice)              │
 │  └─ GET /subscriptions (Check status)              │
 │                                                      │
@@ -498,7 +498,7 @@ SCENARIO C: Payment Declined After 3 Retries
                     │
                     ↓
         ┌───────────────────────┐
-        │   Xendit API          │
+        │   Midtrans API        │
         ├───────────────────────┤
         │ Payment Processing    │
         │ - Create charge       │
@@ -619,8 +619,8 @@ CREATE TABLE payments (
   
   -- Payment method
   payment_method VARCHAR(50), -- 'qris', 'bank_transfer', 'card', 'e_wallet'
-  payment_provider VARCHAR(50), -- 'xendit', 'midtrans'
-  payment_reference VARCHAR(100), -- ID from Xendit/Midtrans
+  payment_provider VARCHAR(50), -- 'midtrans'
+  payment_reference VARCHAR(100), -- order_id from Midtrans
   
   -- Status
   status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'completed', 'failed', 'refunded'
@@ -650,8 +650,8 @@ CREATE TABLE payment_methods (
   
   -- Method info
   type VARCHAR(50), -- 'qris', 'bank_transfer', 'card', 'e_wallet'
-  provider VARCHAR(50), -- 'xendit', 'midtrans'
-  provider_id VARCHAR(100), -- Reference from Xendit/Midtrans
+  provider VARCHAR(50), -- 'midtrans'
+  provider_id VARCHAR(100), -- Reference from Midtrans
   
   -- Masked data (for display)
   display_name VARCHAR(100), -- "GoPay" or "BCA Transfer"
@@ -914,12 +914,12 @@ pnpm db:migrate
 - etc.
 ```
 
-**Day 3: Xendit Integration**
+**Day 3: Midtrans Integration**
 ```typescript
-// lib/payments/xendit.ts
-- createCharge()
-- createRecurringCharge()
-- getChargeStatus()
+// lib/payments/midtrans.ts
+- createTransaction()
+- createRecurringTransaction()
+- getTransactionStatus()
 - refund()
 ```
 
@@ -938,8 +938,8 @@ pnpm db:migrate
 **Day 1: API Endpoints**
 ```typescript
 // app/api/payments/
-- xendit/charge
-- xendit/webhook
+- midtrans/charge
+- midtrans/webhook
 - subscriptions/status
 - invoices/generate
 ```
@@ -991,7 +991,7 @@ __tests__/lib/billing/
 **Day 2: Integration Tests**
 ```typescript
 __tests__/api/payments/
-- xendit-webhook.test.ts
+- midtrans-webhook.test.ts
 - charge.test.ts
 ```
 
@@ -1010,7 +1010,7 @@ e2e/billing.spec.ts
 ### **Core Functionality**
 - ✅ Sign up user → Automatic trial subscription
 - ✅ Select plan → Create subscription + invoice
-- ✅ Payment page → Generate Xendit charge
+- ✅ Payment page → Generate Midtrans transaction
 - ✅ Payment success → Update subscription status
 - ✅ Auto-renewal → Process next month's charge
 - ✅ Upgrade/downgrade → Proration calculation
